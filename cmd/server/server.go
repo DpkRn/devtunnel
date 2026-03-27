@@ -27,12 +27,20 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	// defer conn.Close()
+	defer conn.Close()
 
-	//read from connection
 	buffer := make([]byte, 1024)
-	conn.Read(buffer)
-	fmt.Println("Received data:", string(buffer))
-	conn.Write([]byte("Message received"))
-	conn.Write([]byte("Message received part 2"))
+
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			fmt.Println("Client disconnected")
+			return
+		}
+
+		fmt.Println("Received data:", string(buffer[:n]))
+
+		conn.Write([]byte("Message received\n"))
+		conn.Write([]byte("Message received part 2\n"))
+	}
 }
