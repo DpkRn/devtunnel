@@ -5,9 +5,9 @@ echo "Installing mytunnel..."
 OS=$(uname)
 
 if [ "$OS" = "Linux" ]; then
-    URL="https://yourdomain.com/mytunnel-linux"
+    URL="https://github.com/DpkRn/gotunnel/releases/download/v0.1.0/mytunnel-linux"
 elif [ "$OS" = "Darwin" ]; then
-    URL="https://yourdomain.com/mytunnel-mac"
+    URL="https://github.com/DpkRn/gotunnel/releases/download/v0.1.0/mytunnel-mac"
 else
     echo "Unsupported OS"
     exit 1
