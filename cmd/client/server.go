@@ -5,39 +5,61 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 )
 
 func main() {
-	conn, _ := net.Dial("tcp", "localhost:9000")
-	fmt.Println("Connected to tunnel server")
 
-	buffer := make([]byte, 4096)
-
+	if len(os.Args) < 3 {
+		fmt.Println(os.Args)
+		fmt.Println("Usage: mytunnel http <port>")
+		return
+	}
+	protocol := os.Args[1]
+	port := os.Args[2]
+	startTunneling(protocol, port)
+}
+func startTunneling(protocol, port string) {
+	if protocol != "http" {
+		fmt.Println("only http protocol supported")
+		return
+	}
+	conn, err := net.Dial("tcp", "localhost:9000")
+	if err != nil {
+		fmt.Println("Error connecting to server:", err)
+		return
+	}
+	fmt.Println("✅ Connected to tunnel server")
+	fmt.Println("🚀 Forwarding → http://localhost:3000")
+	defer conn.Close()
 	for {
+		buffer := make([]byte, 4096)
 		n, err := conn.Read(buffer)
 		if err != nil {
-			fmt.Println("Disconnected from server")
+			fmt.Println("Error reading from server:", err)
 			return
 		}
-
-		req := string(buffer[:n])
-		fmt.Println("Received request:", req)
-
-		parts := strings.Split(req, " ")
+		request := string(buffer[:n])
+		fmt.Println("Request:", request)
+		parts := strings.Split(request, " ")
 		// method := parts[0]
-		path := parts[3]
-		fmt.Println("Path:", path)
-		// Call local server
-		resp, err := http.Get("http://localhost:8080/" + path)
+		path := parts[1]
+
+		//make request on local server
+		localServer := "http://localhost:" + port
+
+		resp, err := http.Get(localServer + path)
 		if err != nil {
-			conn.Write([]byte("Error calling local server"))
-			continue
+			fmt.Println("Error making request to local server:", err)
+			return
 		}
-
-		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-
-		conn.Write(body)
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Error reading response from local server:", err)
+			return
+		}
+		conn.Write([]byte(body))
 	}
 }

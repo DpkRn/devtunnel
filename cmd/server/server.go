@@ -10,10 +10,11 @@ var clientConn net.Conn
 
 func main() {
 
-	//for tcp
+	//for tcp: this will exchange data between browser and tunnel-client
 	go startTcpServer()
-	http.HandleFunc("/ping", handleHttp)
+	http.HandleFunc("/", handleHttp)
 	fmt.Println("Server listening on :3000")
+	//will handle browser requests: turnnel-server
 	http.ListenAndServe(":3000", nil)
 }
 func startTcpServer() {
@@ -34,11 +35,10 @@ func startTcpServer() {
 }
 
 func handleHttp(w http.ResponseWriter, r *http.Request) {
-	// defer conn.Close()
 	if clientConn == nil {
 		w.Write([]byte("no connections"))
 	}
-	reqData := fmt.Sprintf("method: %s, url: %s", r.Method, r.URL.String())
+	reqData := fmt.Sprintf("%s %s", r.Method, r.URL.String())
 	clientConn.Write([]byte(reqData))
 
 	buffer := make([]byte, 4096)
