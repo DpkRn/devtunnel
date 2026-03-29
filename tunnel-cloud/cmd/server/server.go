@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/yamux"
 )
@@ -77,8 +78,13 @@ func handleHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	host := r.Host
-	subdomain := strings.Split(host, ".")[0]
-	fmt.Println("host:", host)
+	parts := strings.Split(host, ".")
+	if len(parts) < 2 {
+		http.Error(w, "Invalid host", 400)
+		return
+	}
+	subdomain := parts[0]
+	fmt.Println("subdomain:", subdomain)
 	mu.RLock()
 	session, ok := clientConn[subdomain]
 	mu.RUnlock()
@@ -90,6 +96,9 @@ func handleHttp(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading body", 500)
+		mu.Lock()
+		delete(clientConn, subdomain)
+		mu.Unlock()
 		return
 	}
 	tunnelRequest := TunnelRequest{
@@ -122,6 +131,7 @@ func handleHttp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reader := bufio.NewReader(stream)
+	stream.SetReadDeadline(time.Now().Add(10 * time.Second))
 	responseByte, err := reader.ReadBytes('\n')
 
 	if err != nil {

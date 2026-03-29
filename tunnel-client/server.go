@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/yamux"
 )
@@ -75,6 +76,7 @@ func handleStream(stream net.Conn, port string) {
 	localServer := "http://localhost:" + port
 
 	reader := bufio.NewReader(stream)
+	stream.SetReadDeadline(time.Now().Add(10 * time.Second))
 	requestByte, err := reader.ReadBytes('\n')
 
 	if err != nil {
