@@ -21,5 +21,18 @@ func Start(port string) {
 		fmt.Println("Error reading from connection:", err)
 		return
 	}
-	fmt.Println("Public URL:", strings.TrimSpace(string(buf[:n])))
+	publicURL := "http://" + strings.TrimSpace(string(buf[:n]))
+	localURL := "http://localhost:" + port
+
+	fmt.Println()
+	fmt.Println("  ╔══════════════════════════════════════════════════╗")
+	fmt.Println("  ║   🚇  mytunnel — tunnel is live                  ║")
+	fmt.Println("  ╠══════════════════════════════════════════════════╣")
+	fmt.Printf("  ║  🌍  Public   →  %-32s║\n", publicURL)
+	fmt.Printf("  ║  💻  Local    →  %-32s║\n", localURL)
+	fmt.Println("  ╠══════════════════════════════════════════════════╣")
+	fmt.Println("  ║  ⚡  Forwarding requests...                      ║")
+	fmt.Println("  ║  🛑  Press Ctrl+C to stop                        ║")
+	fmt.Println("  ╚══════════════════════════════════════════════════╝")
+	fmt.Println()
 }
