@@ -5,16 +5,24 @@ echo "Installing mytunnel..."
 OS=$(uname)
 
 if [ "$OS" = "Linux" ]; then
-    URL="https://github.com/DpkRn/gotunnel/releases/download/v0.1.0/mytunnel-linux"
+    URL="https://github.com/DpkRn/devtunnel/releases/latest/download/mytunnel-linux"
 elif [ "$OS" = "Darwin" ]; then
-    URL="https://github.com/DpkRn/gotunnel/releases/download/v0.1.0/mytunnel-mac"
+    URL="https://github.com/DpkRn/devtunnel/releases/latest/download/mytunnel-mac"
 else
     echo "Unsupported OS"
     exit 1
 fi
 
-curl -L $URL -o mytunnel
-chmod +x mytunnel
-sudo mv mytunnel /usr/local/bin/
+curl -fSL --progress-bar "$URL" -o mytunnel </dev/tty
+
+if file mytunnel | grep -qv 'text'; then
+    chmod +x mytunnel
+    sudo mv mytunnel /usr/local/bin/
+else
+    echo "❌ Download failed — file is not a binary:"
+    cat mytunnel
+    rm -f mytunnel
+    exit 1
+fi
 
 echo "✅ Installed! Run: mytunnel http 3000"
