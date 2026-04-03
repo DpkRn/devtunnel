@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net"
 
 	"github.com/DpkRn/devtunnel/internal/pkg"
@@ -9,7 +10,11 @@ import (
 )
 
 func StartTCP(reg *Registry) {
-	listener, _ := net.Listen("tcp", ":9000")
+	listener, err := net.Listen("tcp", ":9000")
+	if err != nil {
+		log.Fatalf("Failed to listen on port 9000: %v", err)
+	}
+	fmt.Println("✅TCP Connection Listening on port 9000")
 
 	for {
 		conn, _ := listener.Accept()
