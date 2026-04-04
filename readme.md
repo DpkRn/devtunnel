@@ -51,6 +51,8 @@ docker run --rm -p 3000:3000 -p 9000:9000 devtunnel-server
 - **3000** — public HTTP edge (subdomain routing)
 - **9000** — tunnel control (yamux; `mytunnel` clients dial this)
 
+The final image uses **distroless** (only your static binary + minimal libc), not Alpine — typically **~10MB**. The `golang:…` image is used only at **build** time; remove dangling layers with `docker image prune -f`.
+
 Override the Go image version if `go.mod` needs a newer toolchain:
 
 ```bash
