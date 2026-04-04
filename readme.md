@@ -32,7 +32,16 @@ go build -a -o mytunnel ./cmd/client
 
 ## Docker (tunnel server)
 
-Build and run `mytunneld` (same binary as `go build ./cmd/server`):
+On EC2 (or any host with Docker), after cloning the repo:
+
+```bash
+chmod +x scripts/docker-server.sh
+./scripts/docker-server.sh
+```
+
+That stops/removes any existing container and image named `devtunnel-server`, rebuilds, and runs detached with `--restart unless-stopped` on ports **3000** and **9000**.
+
+Manual one-off:
 
 ```bash
 docker build -t devtunnel-server .

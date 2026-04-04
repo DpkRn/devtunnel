@@ -182,6 +182,12 @@ The `Dockerfile` builds the **tunnel server** (`./cmd/server`), installed in the
 | 9000 | TCP | Control plane (yamux; CLI clients connect here) |
 
 ```bash
+./scripts/docker-server.sh
+```
+
+Or manually:
+
+```bash
 docker build -t devtunnel-server .
 docker run --rm -p 3000:3000 -p 9000:9000 devtunnel-server
 ```
