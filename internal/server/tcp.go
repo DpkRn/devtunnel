@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 
 	"github.com/DpkRn/devtunnel/internal/config"
 	"github.com/DpkRn/devtunnel/internal/pkg"
@@ -28,10 +29,14 @@ func StartTCP(reg *Registry) {
 
 func handleClient(conn net.Conn, reg *Registry, config *config.Config) {
 	subdomain := pkg.GenerateID()
-	publicUrl := subdomain + "." + config.PublicHostSuffix + "\n"
+	scheme := strings.TrimSuffix(strings.ToLower(config.PublicURLScheme), "://")
+	if scheme == "" {
+		scheme = "https"
+	}
+	publicURL := fmt.Sprintf("%s://%s.%s\n", scheme, subdomain, config.PublicHostSuffix)
 
 	// ✅ send BEFORE yamux
-	conn.Write([]byte(publicUrl))
+	conn.Write([]byte(publicURL))
 
 	// now start yamux
 	session, err := yamux.Server(conn, nil)

@@ -32,14 +32,27 @@ go build -a -o mytunnel ./cmd/client
 
 ## Docker (tunnel server + nginx)
 
-**80** → nginx → mytunneld **:3000** (HTTP, `Host` kept for subdomains). **9000** → mytunneld (tunnel control), not nginx.
+- **443** — HTTPS (nginx → mytunneld :3000, `X-Forwarded-Proto: https`).
+- **80** — redirects to HTTPS; `/.well-known/acme-challenge/` is served for Let’s Encrypt.
+- **9000** — tunnel control (mytunneld), not nginx.
+
+First run creates a **self-signed** cert in `nginx/ssl/` (browser warning). Replace with real certs (`fullchain.pem`, `privkey.pem`) for production. **Let’s Encrypt (webroot):** with the stack up, `sudo certbot certonly --webroot -w /home/ubuntu/devtunnel/nginx/certbot -d yourdomain.com -d '*.yourdomain.com'` (wildcard needs DNS challenge), then copy/symlink PEMs into `nginx/ssl/` and `docker compose restart nginx`.
+
+Set `PublicHostSuffix` and `PublicURLScheme` in `internal/config/config.go` (`https` + your domain, no `:443` in the suffix).
 
 ```bash
 chmod +x scripts/docker-server.sh && ./scripts/docker-server.sh
-# same as: docker compose up -d --build
 ```
 
-Set `PublicHostSuffix` in `internal/config/config.go` to your domain when using port 80.
+The script uses **`docker compose`** (plugin) if available, otherwise **`docker-compose`**.
+
+Ubuntu’s default apt **does not** ship `docker-compose-plugin`. Install the Compose v2 binary once:
+
+```bash
+chmod +x scripts/install-docker-compose.sh && ./scripts/install-docker-compose.sh
+```
+
+Or add [Docker’s official apt repo](https://docs.docker.com/engine/install/ubuntu/) and install `docker-compose-plugin` from there.
 
 Plain Docker (no nginx):
 

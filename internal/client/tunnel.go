@@ -21,7 +21,11 @@ func Start(port string) {
 		fmt.Println("Error reading from connection:", err)
 		return
 	}
-	publicURL := "http://" + strings.TrimSpace(string(buf[:n]))
+	line := strings.TrimSpace(string(buf[:n]))
+	publicURL := line
+	if !strings.HasPrefix(line, "http://") && !strings.HasPrefix(line, "https://") {
+		publicURL = "http://" + line
+	}
 	localURL := "http://localhost:" + port
 
 	fmt.Println()
