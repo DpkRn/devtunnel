@@ -174,28 +174,31 @@ xxd /tmp/test-binary | head -3
 
 ## Docker
 
-The `Dockerfile` builds the **tunnel server** (`./cmd/server`), installed in the image as `/usr/local/bin/mytunneld`. It runs as a non-root user and exposes:
+The `Dockerfile` builds **mytunneld** (`./cmd/server`) as a static binary on **`/mytunneld`** in a **distroless** runtime image.
 
-| Port | Protocol | Role |
-|------|----------|------|
-| 3000 | TCP | Public HTTP edge (Host-based subdomain routing) |
-| 9000 | TCP | Control plane (yamux; CLI clients connect here) |
+**Recommended:** `docker-compose.yml` runs **mytunneld** + **nginx** (Alpine). Nginx listens on **80**, proxies to **mytunneld:3000**, and forwards **`Host`** so subdomain routing in Go still works. **9000** stays on mytunneld for tunnel clients.
 
-```bash
-./scripts/docker-server.sh
-```
-
-Or manually:
+| Port (host) | Service | Role |
+|-------------|---------|------|
+| 80 | nginx | Public HTTP |
+| 9000 | mytunneld | Control plane (yamux) |
+| — | mytunneld:3000 | Edge HTTP (internal to Compose network only) |
 
 ```bash
-docker build -t devtunnel-server .
-docker run --rm -p 3000:3000 -p 9000:9000 devtunnel-server
+./scripts/docker-server.sh   # same as: docker compose up -d --build
 ```
 
-Optional: set the build-stage Go image tag if it must match `go.mod`:
+Without nginx (direct edge):
 
 ```bash
-docker build --build-arg GO_VERSION=1.25 -t devtunnel-server .
+docker build -t mytunneld .
+docker run --rm -p 3000:3000 -p 9000:9000 mytunneld
 ```
 
-`.dockerignore` skips `.git`, markdown, local binaries, and editor folders to keep the build context small.
+Build arg for Go toolchain:
+
+```bash
+docker build --build-arg GO_VERSION=1.25 -t mytunneld .
+```
+
+Nginx config lives in **`nginx/nginx.conf`**. `.dockerignore` trims build context.

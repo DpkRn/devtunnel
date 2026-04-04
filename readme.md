@@ -30,31 +30,22 @@ go clean -cache -modcache -i -r
 go build -a -o mytunnel ./cmd/client
 ```
 
-## Docker (tunnel server)
+## Docker (tunnel server + nginx)
 
-On EC2 (or any host with Docker), after cloning the repo:
-
-```bash
-chmod +x scripts/docker-server.sh
-./scripts/docker-server.sh
-```
-
-That stops/removes any existing container and image named `devtunnel-server`, rebuilds, and runs detached with `--restart unless-stopped` on ports **3000** and **9000**.
-
-Manual one-off:
+**80** → nginx → mytunneld **:3000** (HTTP, `Host` kept for subdomains). **9000** → mytunneld (tunnel control), not nginx.
 
 ```bash
-docker build -t devtunnel-server .
-docker run --rm -p 3000:3000 -p 9000:9000 devtunnel-server
+chmod +x scripts/docker-server.sh && ./scripts/docker-server.sh
+# same as: docker compose up -d --build
 ```
 
-- **3000** — public HTTP edge (subdomain routing)
-- **9000** — tunnel control (yamux; `mytunnel` clients dial this)
+Set `PublicHostSuffix` in `internal/config/config.go` to your domain when using port 80.
 
-The final image uses **distroless** (only your static binary + minimal libc), not Alpine — typically **~10MB**. The `golang:…` image is used only at **build** time; remove dangling layers with `docker image prune -f`.
-
-Override the Go image version if `go.mod` needs a newer toolchain:
+Plain Docker (no nginx):
 
 ```bash
-docker build --build-arg GO_VERSION=1.25 -t devtunnel-server .
+docker build -t mytunneld .
+docker run --rm -p 3000:3000 -p 9000:9000 mytunneld
 ```
+
+The mytunneld image is **distroless** (~10 MB). `docker image prune -f` clears dangling build layers.

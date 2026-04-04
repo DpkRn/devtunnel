@@ -1,7 +1,7 @@
 .git
 .gitignore
 *.md
-Dockerfile*
+# keep Dockerfile in context (do not ignore Dockerfile)
 .dockerignore
 .vscode
 .idea
