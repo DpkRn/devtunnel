@@ -13,3 +13,14 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -out "$SSL/fullchain.pem" \
   -subj "/CN=devtunnel"
 echo "Wrote $SSL/fullchain.pem and privkey.pem"
+
+sudo apt-get update
+sudo apt-get install -y certbot
+certbot --version
+
+sudo certbot certonly --webroot -w /home/ubuntu/devtunnel/nginx/certbot \
+  -d clickly.cv -d www.clickly.cv
+
+sudo cp /etc/letsencrypt/live/clickly.cv/fullchain.pem /home/ubuntu/devtunnel/nginx/ssl/
+sudo cp /etc/letsencrypt/live/clickly.cv/privkey.pem   /home/ubuntu/devtunnel/nginx/ssl/
+cd /home/ubuntu/devtunnel && docker compose up -d --build

@@ -38,7 +38,7 @@ go build -a -o mytunnel ./cmd/client
 
 First run creates a **self-signed** cert in `nginx/ssl/` (browser warning). Replace with real certs (`fullchain.pem`, `privkey.pem`) for production. **Let’s Encrypt (webroot):** with the stack up, `sudo certbot certonly --webroot -w /home/ubuntu/devtunnel/nginx/certbot -d yourdomain.com -d '*.yourdomain.com'` (wildcard needs DNS challenge), then copy/symlink PEMs into `nginx/ssl/` and `docker compose restart nginx`.
 
-Set `PublicHostSuffix` and `PublicURLScheme` in `internal/config/config.go` (`https` + your domain, no `:443` in the suffix).
+Production domain is set in `internal/config/config.go` (`PublicHostSuffix`, `PublicURLScheme`). The CLI dials **`clickly.cv:9000`** for the tunnel; override with `DEVTUNNEL_SERVER=localhost:9000` for local dev.
 
 ```bash
 chmod +x scripts/docker-server.sh && ./scripts/docker-server.sh

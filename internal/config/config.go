@@ -14,6 +14,6 @@ func NewConfig() *Config {
 		ControlTCPListenAddr: ":9000",
 		HTTPListenAddr:       ":3000",
 		PublicURLScheme:      "https",
-		PublicHostSuffix:     "13.233.127.241:3000",
+		PublicHostSuffix:     "clickly.cv",
 	}
 }
