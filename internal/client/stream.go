@@ -44,8 +44,18 @@ func handle(stream net.Conn, port string) {
 		}
 	}
 
-	resp, _ := http.DefaultClient.Do(httpReq)
-	body, _ := io.ReadAll(resp.Body)
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		writeErr(stream, http.StatusBadGateway, []byte("local request failed: "+err.Error()))
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		writeErr(stream, http.StatusBadGateway, []byte("read local response: "+err.Error()))
+		return
+	}
 
 	response := protocol.TunnelResponse{
 		Status:  resp.StatusCode,
@@ -53,6 +63,16 @@ func handle(stream net.Conn, port string) {
 		Body:    body,
 	}
 
-	out, _ := json.Marshal(response)
-	stream.Write(append(out, '\n'))
+	out, err := json.Marshal(response)
+	if err != nil {
+		writeErr(stream, http.StatusInternalServerError, []byte("marshal response"))
+		return
+	}
+	_, _ = stream.Write(append(out, '\n'))
+}
+
+func writeErr(stream net.Conn, code int, msg []byte) {
+	r := protocol.TunnelResponse{Status: code, Body: msg}
+	out, _ := json.Marshal(r)
+	_, _ = stream.Write(append(out, '\n'))
 }
