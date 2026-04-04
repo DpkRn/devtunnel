@@ -9,7 +9,7 @@ import (
 )
 
 func Start(port string) {
-	conn, _ := net.Dial("tcp", "localhost:9000")
+	conn, _ := net.Dial("tcp", "13.233.127.241:9000")
 
 	session, _ := yamux.Client(conn, nil)
 

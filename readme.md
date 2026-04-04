@@ -29,3 +29,21 @@ For a completely fresh build:
 go clean -cache -modcache -i -r
 go build -a -o mytunnel ./cmd/client
 ```
+
+## Docker (tunnel server)
+
+Build and run `mytunneld` (same binary as `go build ./cmd/server`):
+
+```bash
+docker build -t devtunnel-server .
+docker run --rm -p 3000:3000 -p 9000:9000 devtunnel-server
+```
+
+- **3000** — public HTTP edge (subdomain routing)
+- **9000** — tunnel control (yamux; `mytunnel` clients dial this)
+
+Override the Go image version if `go.mod` needs a newer toolchain:
+
+```bash
+docker build --build-arg GO_VERSION=1.25 -t devtunnel-server .
+```

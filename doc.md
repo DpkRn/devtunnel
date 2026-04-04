@@ -169,3 +169,27 @@ curl -fsSL <URL> -o /tmp/test-binary
 file /tmp/test-binary
 xxd /tmp/test-binary | head -3
 ```
+
+---
+
+## Docker
+
+The `Dockerfile` builds the **tunnel server** (`./cmd/server`), installed in the image as `/usr/local/bin/mytunneld`. It runs as a non-root user and exposes:
+
+| Port | Protocol | Role |
+|------|----------|------|
+| 3000 | TCP | Public HTTP edge (Host-based subdomain routing) |
+| 9000 | TCP | Control plane (yamux; CLI clients connect here) |
+
+```bash
+docker build -t devtunnel-server .
+docker run --rm -p 3000:3000 -p 9000:9000 devtunnel-server
+```
+
+Optional: set the build-stage Go image tag if it must match `go.mod`:
+
+```bash
+docker build --build-arg GO_VERSION=1.25 -t devtunnel-server .
+```
+
+`.dockerignore` skips `.git`, markdown, local binaries, and editor folders to keep the build context small.
