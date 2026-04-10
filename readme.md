@@ -38,7 +38,7 @@ go build -a -o mytunnel ./cmd/client
 
 Certs in `nginx/ssl/`: a cert for **`clickly.cv` + `www` only** does **not** cover **`*.clickly.cv`** tunnel URLs — Chrome shows **ERR_CERT_COMMON_NAME_INVALID**. Use **`scripts/gen-ssl-selfsigned.sh`** (includes `*.clickly.cv` in SAN; still “not secure” until you trust the CA) or a **Let’s Encrypt wildcard** `*.clickly.cv` via **DNS-01** (certbot DNS plugin for your DNS host; HTTP-01 cannot issue wildcard). Then copy PEMs into `nginx/ssl/` and `docker compose restart nginx`.
 
-Production domain is set in `internal/config/config.go` (`PublicHostSuffix`, `PublicURLScheme`). The CLI dials **`clickly.cv:9000`** for the tunnel; override with `DEVTUNNEL_SERVER=localhost:9000` for local dev.
+Production domain is set in `internal/platform/config/config.go` (`PublicHostSuffix`, `PublicURLScheme`). The CLI dials **`clickly.cv:9000`** for the tunnel; override with `DEVTUNNEL_SERVER=localhost:9000` for local dev.
 
 ```bash
 chmod +x scripts/docker-server.sh && ./scripts/docker-server.sh

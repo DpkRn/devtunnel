@@ -3,24 +3,28 @@ package client
 import (
 	"fmt"
 	"net"
-	"os"
 	"strings"
 
+	"github.com/DpkRn/devtunnel/internal/platform/config"
 	"github.com/hashicorp/yamux"
 )
 
 // tunnelControlAddr returns host:port for the tunnel control plane.
 // Override for local dev: DEVTUNNEL_SERVER=localhost:9000
 func tunnelControlAddr() string {
-	if s := strings.TrimSpace(os.Getenv("DEVTUNNEL_SERVER")); s != "" {
-		return s
+
+	config := config.NewConfig()
+	switch config.TierFunc() {
+	case "prod":
+		return "clickly.cv:9000"
+	default:
+		return "localhost:9000"
 	}
-	return "clickly.cv:9000"
 }
 
 func Start(port string) {
 	conn, _ := net.Dial("tcp", tunnelControlAddr())
-
+	fmt.Println("Connected to tunnel control plane:", conn.RemoteAddr())
 	session, _ := yamux.Client(conn, nil)
 
 	go acceptStreams(session, port)

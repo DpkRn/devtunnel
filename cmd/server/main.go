@@ -7,15 +7,26 @@ import (
 	"os"
 	"os/signal"
 
+	appconfig "github.com/DpkRn/devtunnel/internal/platform/config"
+	"github.com/DpkRn/devtunnel/internal/platform/mongo"
 	"github.com/DpkRn/devtunnel/internal/server"
 )
 
 func main() {
 	reg := server.NewRegistry()
+	cfg := appconfig.NewConfig()
+	mongoClient, err := mongo.NewMongoClient(cfg.MongoDB())
+	if err != nil {
+		log.Fatalf("Failed to create MongoDB client: %v", err)
+	}
 
-	go server.StartTCP(reg)
+	go server.StartTCP(
+		reg,
+		cfg.TCPServer(),
+		mongoClient,
+	)
 
-	http.HandleFunc("/", server.Handler(reg))
+	http.HandleFunc("/", server.Handler(reg, mongoClient))
 	go func() {
 		err := http.ListenAndServe(":3000", nil)
 		if err != nil {

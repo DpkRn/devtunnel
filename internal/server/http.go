@@ -2,25 +2,41 @@ package server
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/DpkRn/devtunnel/internal/platform/mongo"
 	"github.com/DpkRn/devtunnel/internal/protocol"
 )
 
-func Handler(reg *Registry) http.HandlerFunc {
+func Handler(reg *Registry, mongoClient mongo.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		host, _, err := net.SplitHostPort(r.Host)
 		if err != nil {
 			host = r.Host
 		}
+		// Do not put r.Body in the document: io.ReadCloser is not BSON-encodable and InsertOne would fail.
+		if _, err := mongoClient.InsertRequestLog(context.Background(), map[string]any{
+			"client_ip":       r.RemoteAddr,
+			"request_time":    time.Now(),
+			"request_type":    "http",
+			"request_uri":     r.RequestURI,
+			"request_method":  r.Method,
+			"request_headers": r.Header.Clone(),
+			"content_length":  r.ContentLength,
+		}); err != nil {
+			log.Printf("mongodb request log: %v", err)
+		}
 
 		fmt.Println("r.Host:", r.Host)
+
 		parts := strings.Split(host, ".")
 		if len(parts) < 2 {
 			http.Error(w, "Invalid host", http.StatusBadRequest)
