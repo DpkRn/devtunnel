@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,12 +13,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DpkRn/devtunnel/internal/pkg"
 	"github.com/DpkRn/devtunnel/internal/platform/mongo"
 	"github.com/DpkRn/devtunnel/internal/protocol"
 )
 
 func Handler(reg *Registry, mongoClient mongo.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		start := time.Now()
+		reqID := pkg.GenerateRequestID()
+
 		host, _, err := net.SplitHostPort(r.Host)
 		if err != nil {
 			host = r.Host
@@ -109,5 +115,39 @@ func Handler(reg *Registry, mongoClient mongo.Client) http.HandlerFunc {
 
 		w.WriteHeader(resp.Status)
 		_, _ = w.Write(resp.Body)
+
+		go func() {
+			doc := map[string]any{
+				"_id":       reqID,
+				"tunnel_id": subdomain,
+
+				"request": map[string]any{
+					"method":  r.Method,
+					"path":    r.URL.String(),
+					"headers": r.Header,
+					"body":    base64.StdEncoding.EncodeToString(body),
+					"size":    len(body),
+				},
+
+				"response": map[string]any{
+					"status":  resp.Status,
+					"headers": resp.Headers,
+					"body":    base64.StdEncoding.EncodeToString(resp.Body),
+					"size":    len(resp.Body),
+				},
+
+				"timing": map[string]any{
+					"duration_ms": time.Since(start).Milliseconds(),
+					"timestamp":   start.Format(time.RFC3339),
+				},
+
+				"created_at": time.Now(),
+			}
+
+			_, err := mongoClient.InsertRequestLog(context.Background(), doc)
+			if err != nil {
+				log.Println("Mongo error:", err)
+			}
+		}()
 	}
 }

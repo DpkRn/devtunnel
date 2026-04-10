@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"math/rand"
+
+	"github.com/google/uuid"
 )
 
 var charset = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -14,4 +16,8 @@ func GenerateID() string {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
 	return string(b)
+}
+
+func GenerateRequestID() string {
+	return uuid.New().String()
 }

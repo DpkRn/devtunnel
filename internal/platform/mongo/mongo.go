@@ -12,6 +12,8 @@ import (
 type Client interface {
 	InsertTunnelLog(ctx context.Context, document interface{}) (*mongo.InsertOneResult, error)
 	InsertRequestLog(ctx context.Context, document interface{}) (*mongo.InsertOneResult, error)
+	GetLogs(ctx context.Context, tunnelID string, limit int64) ([]map[string]any, error)
+	GetLogByID(ctx context.Context, id string) (map[string]any, error)
 }
 
 type mongoDB struct {
@@ -48,4 +50,28 @@ func (m *mongoDB) InsertTunnelLog(ctx context.Context, document interface{}) (*m
 
 func (m *mongoDB) InsertRequestLog(ctx context.Context, document interface{}) (*mongo.InsertOneResult, error) {
 	return m.RequestLogCollection.InsertOne(ctx, document)
+}
+
+func (m *mongoDB) GetLogs(ctx context.Context, tunnelID string, limit int64) ([]map[string]any, error) {
+	opts := options.Find().SetSort(map[string]int{"created_at": -1}).SetLimit(limit)
+
+	cursor, err := m.RequestLogCollection.Find(ctx, map[string]any{
+		"tunnel_id": tunnelID,
+	}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []map[string]any
+	err = cursor.All(ctx, &results)
+	return results, err
+}
+
+func (m *mongoDB) GetLogByID(ctx context.Context, id string) (map[string]any, error) {
+	var result map[string]any
+	err := m.RequestLogCollection.FindOne(ctx, map[string]any{
+		"_id": id,
+	}).Decode(&result)
+	return result, err
 }
