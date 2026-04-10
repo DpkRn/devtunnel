@@ -92,11 +92,6 @@ func Handler(reg *Registry, mongoClient mongo.Client) http.HandlerFunc {
 			return
 		}
 
-		if resp.Status < 100 || resp.Status > 599 {
-			http.Error(w, "Bad status from tunnel", http.StatusBadGateway)
-			return
-		}
-
 		for k, v := range resp.Headers {
 			for _, val := range v {
 				w.Header().Add(k, val)
@@ -107,6 +102,13 @@ func Handler(reg *Registry, mongoClient mongo.Client) http.HandlerFunc {
 		_, _ = w.Write(resp.Body)
 
 		go func() {
+
+			defer func() {
+				if r := recover(); r != nil {
+					log.Println("panic:", r)
+				}
+			}()
+
 			doc := map[string]any{
 				"stream_id":  streamID,
 				"request_id": reqID,

@@ -15,6 +15,13 @@ import (
 func main() {
 	reg := server.NewRegistry()
 	cfg := appconfig.NewConfig()
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("panic:", r)
+		}
+	}()
+
 	mongoClient, err := mongo.NewMongoClient(cfg.MongoDB())
 	if err != nil {
 		log.Fatalf("Failed to create MongoDB client: %v", err)
