@@ -18,6 +18,9 @@ func (c config) TCPServer() TCPCfg {
 	publicURLScheme := os.Getenv("PUBLIC_URL_SCHEME")
 	publicHostSuffix := os.Getenv("PUBLIC_HOST_SUFFIX")
 
+	if listenAddr == "" {
+		listenAddr = ":9000"
+	}
 	switch c.TierFunc() {
 	case "dev":
 		return TCPCfg{

@@ -12,6 +12,16 @@ import (
 	"github.com/DpkRn/devtunnel/internal/protocol"
 )
 
+// ServerHomeHandler serves the control-plane root (no tunnel subdomain).
+func ServerHomeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_, _ = w.Write([]byte(`{"service":"devtunnel","role":"control"}` + "\n"))
+}
+
 func GetLogsHandler(mongoClient mongo.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tunnelID := r.URL.Query().Get("tunnel_id")
@@ -71,7 +81,11 @@ func ReplayHandler(reg *Registry, mongoClient mongo.Client) http.HandlerFunc {
 			Body:    body,
 		}
 
-		stream, _ := session.Open()
+		stream, err := session.OpenStream()
+		if err != nil {
+			http.Error(w, "Tunnel stream error", http.StatusBadGateway)
+			return
+		}
 		defer stream.Close()
 
 		data, _ := json.Marshal(req)
@@ -86,4 +100,9 @@ func ReplayHandler(reg *Registry, mongoClient mongo.Client) http.HandlerFunc {
 		w.WriteHeader(resp.Status)
 		w.Write(resp.Body)
 	}
+}
+
+func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_, _ = w.Write([]byte(`{"status":"ok"}` + "\n"))
 }

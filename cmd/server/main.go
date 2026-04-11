@@ -27,13 +27,14 @@ func main() {
 		log.Fatalf("Failed to create MongoDB client: %v", err)
 	}
 
+	tcpCfg := cfg.TCPServer()
 	go server.StartTCP(
 		reg,
-		cfg.TCPServer(),
+		tcpCfg,
 		mongoClient,
 	)
 
-	http.HandleFunc("/", server.Handler(reg, mongoClient))
+	server.SetupRoutes(reg, mongoClient, tcpCfg)
 	go func() {
 		err := http.ListenAndServe(":3000", nil)
 		if err != nil {
