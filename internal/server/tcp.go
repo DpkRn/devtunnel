@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -14,6 +16,30 @@ import (
 	"github.com/hashicorp/yamux"
 )
 
+type TunnelType string
+
+const (
+	TunnelTypeTCP TunnelType = "gotunnel"
+	TunnelTypeUDP TunnelType = "nodetunnel"
+)
+
+type ConnectionStatus string
+
+const (
+	ConnectionStatusOnline  ConnectionStatus = "online"
+	ConnectionStatusOffline ConnectionStatus = "offline"
+)
+
+type TunnelRequest struct {
+	TunnelType       TunnelType       `json:"tunnel_type"`
+	Version          string           `json:"version"`
+	ClientIP         string           `json:"client_ip"`
+	ConnectionTime   time.Time        `json:"connection_time"`
+	ConnectionType   string           `json:"connection_type"`
+	ConnectionID     string           `json:"connection_id"`
+	ConnectionStatus ConnectionStatus `json:"connection_status"`
+}
+
 func StartTCP(reg *Registry, tcpConfig config.TCPCfg, mongoClient mongo.Client) {
 	// config := config.NewConfig()
 	tcpPort := tcpConfig.ListenAddrFunc()
@@ -22,22 +48,34 @@ func StartTCP(reg *Registry, tcpConfig config.TCPCfg, mongoClient mongo.Client) 
 		log.Fatalf("Failed to listen on port %s: %v", tcpPort, err)
 	}
 	fmt.Println("✅TCP Connection Listening on port: ", tcpPort)
-
 	for {
 		conn, _ := listener.Accept()
 		fmt.Println("Client connected:", conn.RemoteAddr())
 
-		// connBytes, err := json.Marshal(conn)
-		// if err != nil {
-		// 	log.Fatalf("Failed to marshal connection: %v", err)
-		// }
-		mongoClient.InsertTunnelLog(context.Background(), map[string]any{
-			"client_ip":       conn.RemoteAddr().String(),
-			"client_port":     conn.RemoteAddr().String(),
-			"connection_time": time.Now().Format(time.RFC3339),
-			"connection_type": "tcp",
-			// "conn":            string(connBytes),
-		})
+		//request client welcome message
+		reader := bufio.NewReader(conn)
+		message, err := reader.ReadBytes('\n')
+		if err != nil {
+			log.Fatalf("Failed to read welcome message: %v", err)
+		}
+		tunnelReq := TunnelRequest{}
+		err = json.Unmarshal(message, &tunnelReq)
+		if err != nil {
+			log.Fatalf("Failed to marshal tunnel request: %v", err)
+		}
+		fmt.Println("tunnelReq:", tunnelReq)
+		tunnelReq.ClientIP = conn.RemoteAddr().String()
+		tunnelReq.ConnectionTime = time.Now()
+		tunnelReq.ConnectionType = "tcp"
+		tunnelReq.ConnectionStatus = ConnectionStatusOnline
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Println("panic:", r)
+				}
+			}()
+			mongoClient.InsertTunnelLog(context.Background(), tunnelReq)
+		}()
 		go func() {
 			handleClient(conn, reg, tcpConfig)
 		}()

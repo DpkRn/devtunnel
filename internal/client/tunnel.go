@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -29,6 +30,19 @@ func Start(port string) string {
 		return ""
 	}
 	fmt.Println("Connected to tunnel control plane:", conn.RemoteAddr())
+	tunnelReq := TunnelRequest{
+		TunnelType:   "gotunnel",
+		Version:      "1.0.8",
+		TunnelID:     "random-tunnel-id", //todo: generate a fixed tunnel for user
+		ConnectionID: GenerateConnectionID(),
+	}
+	tunnelReqBytes, err := json.Marshal(tunnelReq)
+	if err != nil {
+		fmt.Println("Error marshalling tunnel request:", err)
+		return ""
+	}
+	conn.Write(append(tunnelReqBytes, '\n'))
+
 	session, err := yamux.Client(conn, nil)
 	if err != nil {
 		fmt.Println("Error creating yamux session:", err)
@@ -52,7 +66,7 @@ func Start(port string) string {
 
 	fmt.Println()
 	fmt.Println("  ╔══════════════════════════════════════════════════╗")
-	fmt.Println("  ║   🚇  mytunnel — tunnel is live                  ║")
+	fmt.Println("  ║   🫦  🤢 mytunnel — tunnel is live 🤢 🫦                 ║")
 	fmt.Println("  ╠══════════════════════════════════════════════════╣")
 	fmt.Printf("  ║  🌍  Public   →  %-32s║\n", publicURL)
 	fmt.Printf("  ║  💻  Local    →  %-32s║\n", localURL)
